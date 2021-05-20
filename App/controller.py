@@ -47,8 +47,17 @@ def loadData(analizer):
     
     for value in input_file3:
         model.addLandingpoint(analizer, value)
-
     
+    lastservice = None
+    for service in input_file1:
+        if lastservice is not None:
+            sameservice = lastservice['cable_id'] == service['Scable_id']
+            samedirection = lastservice['origin'] == service['origin']
+            samebusStop = lastservice['destination'] == service['destiantion']
+            if sameservice and samedirection and not samebusStop:
+                model.addStopConnection(analizer, lastservice, service)
+        lastservice = service
+    model.addRouteConnections(analizer)
     
 
 # Funciones para la carga de datos
