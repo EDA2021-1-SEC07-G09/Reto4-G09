@@ -1,5 +1,9 @@
 #ISIS1225 - Librerias de soporte
 
+Juan Jose Ramirez Cala - 202013228 - jj.ramirezc1@uniandes.edu.co
+
+Santiago Pardo Morales - 202013025 - s.pardom@uniandes.edu.co
+
 Este proyecto contiene los Tipos abstractos de datos, estructuras de datos y algoritmos requeridos por el curso ISIS1225-Estructuras de Datos y Algoritmos
 
 -Lib

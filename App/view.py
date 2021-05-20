@@ -37,9 +37,20 @@ operación solicitada
 def printMenu():
     print("Bienvenido")
     print("1- Cargar información en el catálogo")
-    print("2- ")
+    print("2- Consultar cantidad de clusteres (componentes conectados)")
+    print("3- Landingpoint con mas interconexiones en la red")
+    print("4- Ruta minima para enviar informacion entre dos paises")
+    print("5- Identificar la red de expansion minima")
+    print("6- Paises afectados por el fallo de un determinado landing point")
 
-catalog = None
+def initAnalizer():
+    analizer = controller.initAnalizer()
+    return analizer
+
+def loadData(analizer):
+    return controller.loadData(analizer)
+
+analizer = None
 
 """
 Menu principal
@@ -48,10 +59,24 @@ while True:
     printMenu()
     inputs = input('Seleccione una opción para continuar\n')
     if int(inputs[0]) == 1:
+        initAnalizer()
+        loadData(analizer)
         print("Cargando información de los archivos ....")
 
     elif int(inputs[0]) == 2:
-        pass
+        controller.requerimiento1(analizer)
+    
+    elif int(inputs[0]) == 3:
+        controller.requerimiento2(analizer)
+    
+    elif int(inputs[0]) == 4:
+        controller.requerimiento3(analizer)
+    
+    elif int(inputs[0]) == 5:
+        controller.requerimiento4(analizer)
+    
+    elif int(inputs[0]) == 6:
+        controller.requerimiento5(analizer)
 
     else:
         sys.exit(0)
