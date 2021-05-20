@@ -31,8 +31,42 @@ El controlador se encarga de mediar entre la vista y el modelo.
 
 # Inicialización del Catálogo de libros
 
+def initAnalizer():
+    model.initAnalizer()
+
+def loadData(analizer):
+    songfile1 = cf.data_dir + 'PrepData/connections.csv'
+    input_file1 = csv.DictReader(open(songfile1, encoding='utf-8'))
+    songfile2 = cf.data_dir + 'PrepData/countries.csv'
+    input_file2 = csv.DictReader(open(songfile2, encoding='utf-8'))
+    songfile3 = cf.data_dir + 'PrepData/landing_points.csv'
+    input_file3 = csv.DictReader(open(songfile3, encoding='utf-8'))
+
+    for value in input_file2:
+        model.addCountry(analizer, value)
+    
+    for value in input_file3:
+        model.addLandingpoint(analizer, value)
+
+    
+    
+
 # Funciones para la carga de datos
 
 # Funciones de ordenamiento
 
 # Funciones de consulta sobre el catálogo
+def requerimiento1(analizer):
+    return model.requerimiento1(analizer)
+
+def requrimiento2(analizer):
+    return model.requerimiento2(analizer)
+
+def requrimiento3(analizer):
+    return model.requerimiento3(analizer)
+
+def requrimiento4(analizer):
+    return model.requerimiento4(analizer)
+
+def requrimiento5(analizer):
+    return model.requerimiento5(analizer)
