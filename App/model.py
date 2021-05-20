@@ -87,7 +87,77 @@ def addLoandingpoint(analizer, datalandingpoint):
         mp.put(map, country, ltpista)
     lt.addLast(ltpista, datalandingpoint)
 
+def addPointConnection(analyzer, lastservice, service):
+
+    origin = formatVertex(lastservice)
+    destination = formatVertex(service)
+    cleanServiceDistance(lastservice, service)
+    distance = float(service['cable_length'][:6]) - float(lastservice['cable_length'][:6])
+    distance = abs(distance)
+    addStop(analyzer, origin)
+    addStop(analyzer, destination)
+    addConnection(analyzer, origin, destination, distance)
+    addRoutePoint(analyzer, service)
+    addRoutePoint(analyzer, lastservice)
+    return analyzer
+
+
+def addStop(analyzer, stopid):
+
+    if not gr.containsVertex(analyzer['connections'], stopid):
+        gr.insertVertex(analyzer['connections'], stopid)
+    return analyzer
+
+
+def addRoutePoint(analyzer, service):
+
+    entry = mp.get(analyzer['points'], service['cable_id'])
+    if entry is None:
+        lstroutes = lt.newList(cmpfunction=compareroutes)
+        lt.addLast(lstroutes, service['cable_id'])
+        mp.put(analyzer['points'], service['cable_name'], lstroutes)
+    else:
+        lstroutes = entry['value']
+        info = service['cable_id']
+        if not lt.isPresent(lstroutes, info):
+            lt.addLast(lstroutes, info)
+    return analyzer
+
+
+def addRouteConnections(analyzer):
+
+    lststops = mp.keySet(analyzer['points'])
+    for key in lt.iterator(lststops):
+        lstroutes = me.get(analyzer['points'], key)['value']
+        prevrout = None
+        for route in lt.iterator(lstroutes):
+            route = key + '-' + route
+            if prevrout is not None:
+                addConnection(analyzer, prevrout, route, 0)
+                addConnection(analyzer, route, prevrout, 0)
+            prevrout = route
+
+
+def addConnection(analyzer, origin, destination, distance):
+
+    edge = gr.getEdge(analyzer['connections'], origin, destination)
+    if edge is None:
+        gr.addEdge(analyzer['connections'], origin, destination, distance)
+    return analyzer
 # Funciones para creacion de datos
+def cleanServiceDistance(lastservice, service):
+
+    if service['cable_length'] == '':
+        service['cable_length'] = 0
+    if lastservice['cable_length'] == '':
+        lastservice['cable_length'] = 0
+
+
+def formatVertex(service):
+
+    name = service['cable_name'] + '-'
+    name = name + service['cable_id']
+    return name
 
 # Funciones de consulta
 def requerimiento1(analizer):
@@ -107,13 +177,20 @@ def requerimiento1(analizer):
 
 # Funciones utilizadas para comparar elementos dentro de una lista
 def cmpId(stop, keyvaluestop):
-    """
-    Compara dos estaciones
-    """
+
     stopcode = keyvaluestop['key']
     if (stop == stopcode):
         return 0
     elif (stop > stopcode):
+        return 1
+    else:
+        return -1
+
+def compareroutes(route1, route2):
+
+    if (route1 == route2):
+        return 0
+    elif (route1 > route2):
         return 1
     else:
         return -1
