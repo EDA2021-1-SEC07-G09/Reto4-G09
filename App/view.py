@@ -79,9 +79,9 @@ while True:
         result = controller.requerimiento1(analyzer, origin, destination)
         print('El número de componentes conectados es: ', result[0][0])
         if result[0][1]:
-            print('Si existe un camino entre los landing point '+ origin, ' y '+ destination)
+            print('Los landing point '+ origin, ' y '+ destination + ' estan en el mismo cluster')
         else: 
-            print('No existe un camino entre los landing point '+ origin, ' y '+ destination)
+            print('Los landing point '+ origin, ' y '+ destination +  ' no estan en el mismo cluster')
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
     elif int(inputs[0]) == 3:
         controller.requerimiento2(analyzer)

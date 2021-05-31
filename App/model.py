@@ -230,6 +230,10 @@ def connectedComponents(analyzer):
 
     return scc.connectedComponents(analyzer['components'])
 
+def sameCluster(analyzer, origin, destination):
+
+    return scc.stronglyConnected(analyzer['components'], origin, destination)
+
 def existPath (analyzer, origin, destination):
 
     analyzer['paths'] = dfs.DepthFirstSearch(analyzer['connections'], origin)

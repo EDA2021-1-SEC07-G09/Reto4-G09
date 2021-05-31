@@ -103,7 +103,7 @@ def requerimiento1(analyzer, origin, destination):
         if destination in key:
             vertexb = key
     clusters = model.connectedComponents(analyzer)
-    existpath = model.existPath(analyzer, vertexa, vertexb)
+    samecluster = model.sameCluster(analyzer, vertexa, vertexb)
 
     stop_memory = getMemory()
     stop_time = getTime()
@@ -112,7 +112,7 @@ def requerimiento1(analyzer, origin, destination):
     delta_time = stop_time - start_time
     delta_memory = deltaMemory(start_memory, stop_memory)
 
-    return ((clusters, existpath), (delta_time, delta_memory))
+    return ((clusters, samecluster), (delta_time, delta_memory))
 
 def requrimiento2(analizer):
     delta_time = -1.0
