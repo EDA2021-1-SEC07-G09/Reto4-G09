@@ -34,6 +34,7 @@ assert cf
 from DISClib.ADT.graph import gr
 from DISClib.Algorithms.Graphs import scc
 from DISClib.Algorithms.Graphs import dijsktra as djk
+from DISClib.Algorithms.Graphs import dfs
 from math import sin,cos,sqrt,asin,pi
 """
 Se define la estructura de un catálogo de videos. El catálogo tendrá dos listas, una para los videos, otra para las categorias de
@@ -49,7 +50,7 @@ def initAnalyzer():
                     'points' : None
                     }
 
-    analyzer['countries'] = mp.newMap(numelements=14000,
+    analyzer['countries'] = mp.newMap(numelements=236,
                                      maptype='PROBING',
                                      comparefunction=cmpId)
     analyzer['landingpoints'] = mp.newMap(numelements=14000,
@@ -58,6 +59,12 @@ def initAnalyzer():
     analyzer['points'] = mp.newMap(numelements=14000,
                                      maptype='PROBING',
                                      comparefunction=cmpId)
+    analyzer['countrypoints'] = mp.newMap(numelements=236,
+                                     maptype='PROBING',
+                                     comparefunction=cmpId)
+    analyzer['cables'] = mp.newMap(numelements=14000,
+                                     maptype='PROBING',
+                                     comparefunction=cmpCables)
 
     analyzer['connections'] = gr.newGraph(datastructure='ADJ_LIST',
                                               directed=True,
@@ -66,40 +73,58 @@ def initAnalyzer():
     return analyzer
 # Funciones para agregar informacion al catalogo
 def addCountry(analyzer, datacountry):
+
     map = analyzer['countries']
     country = datacountry['CountryName']
     existcountry = mp.contains(map, country)
-    if existcountry:
-        entry = mp.get(map, country)
-        ltpista = me.getValue(entry)
-    else:
-        ltpista = lt.newList('ARRAY_LIST')
-        mp.put(map, country, ltpista)
-    lt.addLast(ltpista, datacountry)
+    if  not existcountry:
+        mp.put(map, country, datacountry)
 
 def addLandingPoint(analyzer, datalandingpoint):
 
+    map = analyzer['landingpoints']
     landingpoint = datalandingpoint['landing_point_id']
-    existlandingpoint = mp.contains(analyzer['landingpoints'], landingpoint)
-    if existlandingpoint:
-        dataentry = mp.get(analyzer['landingpoints'], landingpoint)
-        entry = me.getValue(dataentry)
-    else:
-        entry = datalandingpoint
-        mp.put(analyzer['landingpoints'], landingpoint, entry)
+    existlandingpoint = mp.contains(map, landingpoint)
+    if not existlandingpoint:
+        mp.put(map, landingpoint, datalandingpoint)
 
 def addCablePoint (analyzer, landingpoint, cablepoint):
-    existlandingpoint = mp.contains(analyzer['points'], landingpoint)
+
+    map = analyzer['points']
+    existlandingpoint = mp.contains(map, landingpoint)
     if existlandingpoint:
-        dataentry = mp.get(analyzer['points'], landingpoint)
+        dataentry = mp.get(map, landingpoint)
         entry = me.getValue(dataentry)
     else:
-        entry = lt.newList('ARRAY_LIST', cmpfunction = cmp)
-        mp.put(analyzer['points'], landingpoint, entry)
+        entry = lt.newList(datastructure = 'ARRAY_LIST', cmpfunction = cmp)
+        mp.put(map, landingpoint, entry)
     contains = lt.isPresent(entry, cablepoint)
     if contains == 0:
         lt.addLast(entry, cablepoint)
 
+def addCable (analyzer, cable):
+
+    map = analyzer['cables']
+    existcable = mp.contains(map, cable)
+    if not existcable:
+        mp.put(map, cable, 'exist')
+
+def addCountryPoint(analyzer, countrypoint):
+
+    country = countrypoint.split(',')
+    country = country[len(country)-1].lstrip()
+    map = analyzer['countrypoints']
+    existcountry = mp.contains(map, country)
+    if existcountry:
+        dataentry = mp.get(map, country)
+        entry = me.getValue(dataentry)
+    else:
+        entry = lt.newList(datastructure = 'ARRAY_LIST', cmpfunction = cmp)
+        mp.put(map, country, entry)
+    contains = lt.isPresent(entry, countrypoint)
+    if contains == 0:
+        lt.addLast(entry, countrypoint)
+    
 def addPointConnection(analyzer, connection):
 
     origin = formatVertex(analyzer, connection,'origin')
@@ -110,6 +135,9 @@ def addPointConnection(analyzer, connection):
     addConnection(analyzer, origin, destination, distance)
     addCablePoint(analyzer, connection['origin'], origin)
     addCablePoint(analyzer, connection['destination'], destination)
+    addCountryPoint(analyzer, origin)
+    addCountryPoint(analyzer, destination)
+    addCable(analyzer, origin)
 
     return analyzer
 
@@ -121,39 +149,36 @@ def addStop(analyzer, stopid):
 
     return analyzer
 
-
-def addRoutePoint(analyzer, service):
-
-    entry = mp.get(analyzer['points'], service['cable_id'])
-    if entry is None:
-        lstroutes = lt.newList(cmpfunction=compareroutes)
-        lt.addLast(lstroutes, service['cable_id'])
-        mp.put(analyzer['points'], service['cable_name'], lstroutes)
-    else:
-        lstroutes = entry['value']
-        info = service['cable_id']
-        if not lt.isPresent(lstroutes, info):
-            lt.addLast(lstroutes, info)
-    return analyzer    
-
 def addLandingPointConnections(analyzer):
 
     lstpoints = mp.keySet(analyzer['points'])
     for key in lt.iterator(lstpoints):
         dataentry = mp.get(analyzer['points'], key)
         lstcables = me.getValue(dataentry)
+        i = 1
+        while i < lt.size(lstcables):
+            origin = lt.getElement(lstcables, i)
+            destination = lt.getElement(lstcables, (i+1))
+            addConnection(analyzer, origin, destination, 0)
+            i += 1
         if lt.size(lstcables) >= 2:
-            i = 1
-            while i < lt.size(lstcables):
-                origin = lt.getElement(lstcables, i)
-                destination = lt.getElement(lstcables, (i+1))
-                addConnection(analyzer, origin, destination, 0)
-                i += 1
             origin = lt.lastElement(lstcables)
             destination = lt.firstElement(lstcables)
             addConnection(analyzer, origin, destination, 0)
         
+def addCountryConnections(analyzer):
 
+    lstcountry = mp.keySet(analyzer['countrypoints'])
+    for key in lt.iterator(lstcountry):
+        dataentry = mp.get(analyzer['countrypoints'], key)
+        lstpoint = me.getValue(dataentry)
+        capital = mp.get(analyzer['countries'], key)
+        capital = me.getValue(capital)['CapitalName']
+        vertex = key + '-'+ capital
+        addStop(analyzer, vertex)
+        for value in lt.iterator(lstpoint):
+            addConnection(analyzer, vertex, value, 0)
+            addConnection(analyzer, value, vertex, 0)
 
 def addConnection(analyzer, origin, destination, distance):
 
@@ -177,42 +202,40 @@ def getDistance (analyzer, origin, destination):
 
     return distance
     
-def formatVertex (analyzer, connection, point):
+def formatVertex (analyzer, connection, element):
 
     name = None
-    if point == 'origin':
+    if element == 'origin':
         name = connection['origin']
     else:
         name = connection['destination']
     dataentry = mp.get(analyzer['landingpoints'], name)
     entry = me.getValue(dataentry)['name']
-    name = name + connection['cable_name'] + entry
+    name = str(name + ','+ connection['cable_name']+ ','+ entry)
 
     return name
 
+def selectResult(value, element):
+
+    if element == 'country':
+        return str("Pais: " + value['CountryName']+ " - Poblacion: "+ value['Population']+ " - Numero de usuarios: "+ value['Internet users'])
+    else:
+        return str("Landing point id: "+ value['landing_point_id']+ " - Nombre: "+ value['name']+ " - Latitud: "+ value['latitude']+ " - Longitud: "+ value['longitude'])
+
 # Funciones de consulta
-def requerimiento1(analizer):
-    return
-
-def requerimiento1(analizer):
-    return
-
-def requerimiento1(analizer):
-    return
-
-def requerimiento1(analizer):
-    return
-
-def requerimiento1(analizer):
-    return
 
 def connectedComponents(analyzer):
-    """
-    Calcula los componentes conectados del grafo
-    Se utiliza el algoritmo de Kosaraju
-    """
+  
     analyzer['components'] = scc.KosarajuSCC(analyzer['connections'])
+
     return scc.connectedComponents(analyzer['components'])
+
+def existPath (analyzer, origin, destination):
+
+    analyzer['paths'] = dfs.DepthFirstSearch(analyzer['connections'], origin)
+    exist = dfs.hasPathTo(analyzer['paths'], destination)
+
+    return exist
 
 # Funciones utilizadas para comparar elementos dentro de una lista
 def cmpId(stop, keyvaluestop):
@@ -231,6 +254,14 @@ def cmp(value1, value2):
         return 0
     elif (value1 > value2):
         return 1
+    else:
+        return -1
+
+def cmpCables(stop, keyvaluestop):
+
+    stopcode = keyvaluestop['key']
+    if (stop in stopcode):
+        return 0
     else:
         return -1
 # Funciones de ordenamiento

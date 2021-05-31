@@ -61,17 +61,28 @@ while True:
     inputs = input('Seleccione una opción para continuar\n')
     if int(inputs[0]) == 1:
         analyzer = initAnalyzer()
-        loadData(analyzer)
-        print(gr.numVertices(analyzer['connections']))
-        print(gr.numEdges(analyzer['connections']))
-        print(mp.size(analyzer['points']))
+        result = loadData(analyzer)
         print("Cargando información de los archivos ....")
+        print("El total de landing points cargados es de: ", gr.numVertices(analyzer['connections']),
+        "\nEl total de conexiones entre landing points es de: ", gr.numEdges(analyzer['connections']),
+        "\nEl total de países cargados es de: ", mp.size(analyzer['countries']),
+        "\n\n ++++++ 1° Landing point cargado ++++++"+ "\n"+ result[0][1],
+        "\n\n ++++++ Ultimo Pais cargado ++++++"+ "\n"+ result[0][0])
+        value = mp.valueSet(analyzer['points'])
+        x = lt.firstElement(value)
+        print(x)
+        print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
 
     elif int(inputs[0]) == 2:
-        print('El número de componentes conectados es: ' +
-          str(controller.connectedComponents(analyzer)))
-        #controller.requerimiento1(analyzer)
-    
+        origin = input("Ingresa el landing point origen: ")
+        destination = input("Ingresa el landing point destino: ")
+        result = controller.requerimiento1(analyzer, origin, destination)
+        print('El número de componentes conectados es: ', result[0][0])
+        if result[0][1]:
+            print('Si existe un camino entre los landing point '+ origin, ' y '+ destination)
+        else: 
+            print('No existe un camino entre los landing point '+ origin, ' y '+ destination)
+        print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
     elif int(inputs[0]) == 3:
         controller.requerimiento2(analyzer)
     
