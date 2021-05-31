@@ -82,17 +82,20 @@ def addLandingPoint(analyzer, datalandingpoint):
     landingpoint = datalandingpoint['landing_point_id']
     existlandingpoint = mp.contains(analyzer['landingpoints'], landingpoint)
     if existlandingpoint:
-        dataentry = mp.get(map, landingpoint)
+        dataentry = mp.get(analyzer['landingpoints'], landingpoint)
         entry = me.getValue(dataentry)
     else:
-        entry = {'data' : None,
-                    'lstcable' : lt.newList('ARRAY_LIST')}
+        entry = datalandingpoint
         mp.put(analyzer['landingpoints'], landingpoint, entry)
-    entry['data'] = datalandingpoint
 
 def addCablePoint (analyzer, landingpoint, cablepoint):
-    dataentry = mp.get(analyzer['landingpoints'], landingpoint)
-    entry = me.getValue(dataentry)['lstcable']
+    existlandingpoint = mp.contains(analyzer['points'], landingpoint)
+    if existlandingpoint:
+        dataentry = mp.get(analyzer['points'], landingpoint)
+        entry = me.getValue(dataentry)
+    else:
+        entry = lt.newList('ARRAY_LIST', cmpfunction = cmp)
+        mp.put(analyzer['points'], landingpoint, entry)
     contains = lt.isPresent(entry, cablepoint)
     if contains == 0:
         lt.addLast(entry, cablepoint)
@@ -132,22 +135,24 @@ def addRoutePoint(analyzer, service):
         if not lt.isPresent(lstroutes, info):
             lt.addLast(lstroutes, info)
     return analyzer
-
-
+    
 def addLandingPointConnections(analyzer):
 
-    lststops = mp.keySet(analyzer['points'])
-    for key in lt.iterator(lststops):
+    lstpoints = mp.keySet(analyzer['points'])
+    for key in lt.iterator(lstpoints):
         dataentry = mp.get(analyzer['points'], key)
-        lstcables = me.getValue(dataentry)['lstcables']
-        i = 1
-        while i < lt.size(lstcables):
-            origin = lt.getElement(lstcables, i)
-            destination = lt.getElement(lstcables, i+1)
+        lstcables = me.getValue(dataentry)
+        if lt.size(lstcables) >= 2:
+            i = 1
+            while i < lt.size(lstcables):
+                origin = lt.getElement(lstcables, i)
+                destination = lt.getElement(lstcables, (i+1))
+                addConnection(analyzer, origin, destination, 0)
+                i += 1
+        if lt.size(lstcables) >= 3:
+            origin = lt.lastElement(lstcables)
+            destination = lt.firstElement(lstcables)
             addConnection(analyzer, origin, destination, 0)
-        origin = lt.lastElement(lstcables)
-        destination = lt.firstElement(lstcables)
-        addConnection(analyzer, origin, destination, 0)
         
 
 
@@ -166,8 +171,8 @@ def getDistance (analyzer, origin, destination):
     entry1 = me.getValue(dataentry1)
     dataentry2 = mp.get(analyzer['landingpoints'], destination)
     entry2 = me.getValue(dataentry2)
-    coordinate1 = (float(entry1['data']['latitude']), float(entry1['data']['longitude']))
-    coordinate2 = (float(entry2['data']['latitude']), float(entry2['data']['longitude']))
+    coordinate1 = (float(entry1['latitude']), float(entry1['longitude']))
+    coordinate2 = (float(entry2['latitude']), float(entry2['longitude']))
     distance = 2*6371000*asin(sqrt(sin((pi/180)*(coordinate2[0]-coordinate1[0])/2)**2 + cos((pi/180)*coordinate1[0])*cos((pi/180)*coordinate2[0])*sin((pi/180)*(coordinate2[1]-coordinate1[1])/2)**2))
     distance = float("%.2f" % distance)
 
@@ -181,7 +186,7 @@ def formatVertex (analyzer, connection, point):
     else:
         name = connection['destination']
     dataentry = mp.get(analyzer['landingpoints'], name)
-    entry = me.getValue(dataentry)['data']['name']
+    entry = me.getValue(dataentry)['name']
     name = name + connection['cable_name'] + entry
 
     return name
@@ -213,11 +218,11 @@ def cmpId(stop, keyvaluestop):
     else:
         return -1
 
-def compareroutes(route1, route2):
+def cmp(value1, value2):
 
-    if (route1 == route2):
+    if (value1 == value2):
         return 0
-    elif (route1 > route2):
+    elif (value1 > value2):
         return 1
     else:
         return -1

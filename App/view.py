@@ -25,6 +25,7 @@ import sys
 import controller
 from DISClib.ADT import list as lt
 from DISClib.ADT.graph import gr
+from DISClib.ADT import map as mp
 assert cf
 
 
@@ -62,6 +63,8 @@ while True:
         analyzer = initAnalyzer()
         loadData(analyzer)
         print(gr.numVertices(analyzer['connections']))
+        print(gr.numEdges(analyzer['connections']))
+        print(mp.size(analyzer['points']))
         print("Cargando información de los archivos ....")
 
     elif int(inputs[0]) == 2:
