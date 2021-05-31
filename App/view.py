@@ -68,7 +68,9 @@ while True:
         print("Cargando información de los archivos ....")
 
     elif int(inputs[0]) == 2:
-        controller.requerimiento1(analyzer)
+        print('El número de componentes conectados es: ' +
+          str(controller.connectedComponents(analyzer)))
+        #controller.requerimiento1(analyzer)
     
     elif int(inputs[0]) == 3:
         controller.requerimiento2(analyzer)

@@ -58,6 +58,11 @@ def loadData(analyzer):
 # Funciones para la carga de datos
 
 # Funciones de ordenamiento
+def connectedComponents(analyzer):
+    """
+    Numero de componentes fuertemente conectados
+    """
+    return model.connectedComponents(analyzer)
 
 # Funciones de consulta sobre el catálogo
 def requerimiento1(analizer):

@@ -134,8 +134,8 @@ def addRoutePoint(analyzer, service):
         info = service['cable_id']
         if not lt.isPresent(lstroutes, info):
             lt.addLast(lstroutes, info)
-    return analyzer
-    
+    return analyzer    
+
 def addLandingPointConnections(analyzer):
 
     lstpoints = mp.keySet(analyzer['points'])
@@ -149,7 +149,6 @@ def addLandingPointConnections(analyzer):
                 destination = lt.getElement(lstcables, (i+1))
                 addConnection(analyzer, origin, destination, 0)
                 i += 1
-        if lt.size(lstcables) >= 3:
             origin = lt.lastElement(lstcables)
             destination = lt.firstElement(lstcables)
             addConnection(analyzer, origin, destination, 0)
@@ -206,6 +205,14 @@ def requerimiento1(analizer):
 
 def requerimiento1(analizer):
     return
+
+def connectedComponents(analyzer):
+    """
+    Calcula los componentes conectados del grafo
+    Se utiliza el algoritmo de Kosaraju
+    """
+    analyzer['components'] = scc.KosarajuSCC(analyzer['connections'])
+    return scc.connectedComponents(analyzer['components'])
 
 # Funciones utilizadas para comparar elementos dentro de una lista
 def cmpId(stop, keyvaluestop):
