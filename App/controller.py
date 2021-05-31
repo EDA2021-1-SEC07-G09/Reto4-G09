@@ -31,33 +31,28 @@ El controlador se encarga de mediar entre la vista y el modelo.
 
 # Inicialización del Catálogo de libros
 
-def initAnalizer():
-    model.initAnalizer()
+def initAnalyzer():
+    
+    return model.initAnalyzer()
 
-def loadData(analizer):
+def loadData(analyzer):
     songfile1 = cf.data_dir + 'PrepData/connections.csv'
-    input_file1 = csv.DictReader(open(songfile1, encoding='utf-8'))
+    input_file1 = csv.DictReader(open(songfile1, encoding='utf-8-sig'))
     songfile2 = cf.data_dir + 'PrepData/countries.csv'
     input_file2 = csv.DictReader(open(songfile2, encoding='utf-8'))
     songfile3 = cf.data_dir + 'PrepData/landing_points.csv'
     input_file3 = csv.DictReader(open(songfile3, encoding='utf-8'))
-
+    
     for value in input_file2:
-        model.addCountry(analizer, value)
+        model.addCountry(analyzer, value)
     
     for value in input_file3:
-        model.addLandingpoint(analizer, value)
+        model.addLandingPoint(analyzer, value)
     
-    lastservice = None
-    for service in input_file1:
-        if lastservice is not None:
-            sameservice = lastservice['cable_id'] == service['Scable_id']
-            samedirection = lastservice['origin'] == service['origin']
-            samebusStop = lastservice['destination'] == service['destiantion']
-            if sameservice and samedirection and not samebusStop:
-                model.addStopConnection(analizer, lastservice, service)
-        lastservice = service
-    model.addRouteConnections(analizer)
+    for value in input_file1:
+        model.addPointConnection(analyzer, value)
+
+    model.addLandingPointConnections(analyzer)
     
 
 # Funciones para la carga de datos

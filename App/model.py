@@ -34,24 +34,25 @@ assert cf
 from DISClib.ADT.graph import gr
 from DISClib.Algorithms.Graphs import scc
 from DISClib.Algorithms.Graphs import dijsktra as djk
+from math import sin,cos,sqrt,asin,pi
 """
 Se define la estructura de un catálogo de videos. El catálogo tendrá dos listas, una para los videos, otra para las categorias de
 los mismos.
 """
 
 # Construccion de modelos
-def initAnalizer():
+def initAnalyzer():
     analyzer = {
                     'connections': None,
                     'countries': None,
-                    'loandingpoints': None,
+                    'landingpoints': None,
                     'points' : None
                     }
 
     analyzer['countries'] = mp.newMap(numelements=14000,
                                      maptype='PROBING',
                                      comparefunction=cmpId)
-    analyzer['loandingpoints'] = mp.newMap(numelements=14000,
+    analyzer['landingpoints'] = mp.newMap(numelements=14000,
                                      maptype='PROBING',
                                      comparefunction=cmpId)
     analyzer['points'] = mp.newMap(numelements=14000,
@@ -62,9 +63,10 @@ def initAnalizer():
                                               directed=True,
                                               size=14000,
                                               comparefunction=cmpId)
+    return analyzer
 # Funciones para agregar informacion al catalogo
-def addCountry(analizer, datacountry):
-    map = analizer['countries']
+def addCountry(analyzer, datacountry):
+    map = analyzer['countries']
     country = datacountry['CountryName']
     existcountry = mp.contains(map, country)
     if existcountry:
@@ -75,30 +77,37 @@ def addCountry(analizer, datacountry):
         mp.put(map, country, ltpista)
     lt.addLast(ltpista, datacountry)
 
-def addLoandingpoint(analizer, datalandingpoint):
-    map = analizer['landingponits']
-    country = datalandingpoint['landing_point_id']
-    existcountry = mp.contains(map, country)
-    if existcountry:
-        entry = mp.get(map, country)
-        ltpista = me.getValue(entry)
+def addLandingPoint(analyzer, datalandingpoint):
+
+    landingpoint = datalandingpoint['landing_point_id']
+    existlandingpoint = mp.contains(analyzer['landingpoints'], landingpoint)
+    if existlandingpoint:
+        dataentry = mp.get(map, landingpoint)
+        entry = me.getValue(dataentry)
     else:
-        ltpista = lt.newList('ARRAY_LIST')
-        mp.put(map, country, ltpista)
-    lt.addLast(ltpista, datalandingpoint)
+        entry = {'data' : None,
+                    'lstcable' : lt.newList('ARRAY_LIST')}
+        mp.put(analyzer['landingpoints'], landingpoint, entry)
+    entry['data'] = datalandingpoint
 
-def addPointConnection(analyzer, lastservice, service):
+def addCablePoint (analyzer, landingpoint, cablepoint):
+    dataentry = mp.get(analyzer['landingpoints'], landingpoint)
+    entry = me.getValue(dataentry)['lstcable']
+    contains = lt.isPresent(entry, cablepoint)
+    if contains == 0:
+        lt.addLast(entry, cablepoint)
 
-    origin = formatVertex(lastservice)
-    destination = formatVertex(service)
-    cleanServiceDistance(lastservice, service)
-    distance = float(service['cable_length'][:6]) - float(lastservice['cable_length'][:6])
-    distance = abs(distance)
+def addPointConnection(analyzer, connection):
+
+    origin = formatVertex(analyzer, connection,'origin')
+    destination = formatVertex(analyzer, connection,'destination')
+    distance = getDistance(analyzer, connection['origin'], connection['destination'])
     addStop(analyzer, origin)
     addStop(analyzer, destination)
     addConnection(analyzer, origin, destination, distance)
-    addRoutePoint(analyzer, service)
-    addRoutePoint(analyzer, lastservice)
+    addCablePoint(analyzer, connection['origin'], origin)
+    addCablePoint(analyzer, connection['destination'], destination)
+
     return analyzer
 
 
@@ -106,6 +115,7 @@ def addStop(analyzer, stopid):
 
     if not gr.containsVertex(analyzer['connections'], stopid):
         gr.insertVertex(analyzer['connections'], stopid)
+
     return analyzer
 
 
@@ -124,18 +134,21 @@ def addRoutePoint(analyzer, service):
     return analyzer
 
 
-def addRouteConnections(analyzer):
+def addLandingPointConnections(analyzer):
 
     lststops = mp.keySet(analyzer['points'])
     for key in lt.iterator(lststops):
-        lstroutes = me.get(analyzer['points'], key)['value']
-        prevrout = None
-        for route in lt.iterator(lstroutes):
-            route = key + '-' + route
-            if prevrout is not None:
-                addConnection(analyzer, prevrout, route, 0)
-                addConnection(analyzer, route, prevrout, 0)
-            prevrout = route
+        dataentry = mp.get(analyzer['points'], key)
+        lstcables = me.getValue(dataentry)['lstcables']
+        i = 1
+        while i < lt.size(lstcables):
+            origin = lt.getElement(lstcables, i)
+            destination = lt.getElement(lstcables, i+1)
+            addConnection(analyzer, origin, destination, 0)
+        origin = lt.lastElement(lstcables)
+        destination = lt.firstElement(lstcables)
+        addConnection(analyzer, origin, destination, 0)
+        
 
 
 def addConnection(analyzer, origin, destination, distance):
@@ -144,19 +157,33 @@ def addConnection(analyzer, origin, destination, distance):
     if edge is None:
         gr.addEdge(analyzer['connections'], origin, destination, distance)
     return analyzer
+
 # Funciones para creacion de datos
-def cleanServiceDistance(lastservice, service):
 
-    if service['cable_length'] == '':
-        service['cable_length'] = 0
-    if lastservice['cable_length'] == '':
-        lastservice['cable_length'] = 0
+def getDistance (analyzer, origin, destination):
 
+    dataentry1 = mp.get(analyzer['landingpoints'], origin)
+    entry1 = me.getValue(dataentry1)
+    dataentry2 = mp.get(analyzer['landingpoints'], destination)
+    entry2 = me.getValue(dataentry2)
+    coordinate1 = (float(entry1['data']['latitude']), float(entry1['data']['longitude']))
+    coordinate2 = (float(entry2['data']['latitude']), float(entry2['data']['longitude']))
+    distance = 2*6371000*asin(sqrt(sin((pi/180)*(coordinate2[0]-coordinate1[0])/2)**2 + cos((pi/180)*coordinate1[0])*cos((pi/180)*coordinate2[0])*sin((pi/180)*(coordinate2[1]-coordinate1[1])/2)**2))
+    distance = float("%.2f" % distance)
 
-def formatVertex(service):
+    return distance
+    
+def formatVertex (analyzer, connection, point):
 
-    name = service['cable_name'] + '-'
-    name = name + service['cable_id']
+    name = None
+    if point == 'origin':
+        name = connection['origin']
+    else:
+        name = connection['destination']
+    dataentry = mp.get(analyzer['landingpoints'], name)
+    entry = me.getValue(dataentry)['data']['name']
+    name = name + connection['cable_name'] + entry
+
     return name
 
 # Funciones de consulta

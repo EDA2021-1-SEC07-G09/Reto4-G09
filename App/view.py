@@ -24,6 +24,7 @@ import config as cf
 import sys
 import controller
 from DISClib.ADT import list as lt
+from DISClib.ADT.graph import gr
 assert cf
 
 
@@ -43,14 +44,13 @@ def printMenu():
     print("5- Identificar la red de expansion minima")
     print("6- Paises afectados por el fallo de un determinado landing point")
 
-def initAnalizer():
-    analizer = controller.initAnalizer()
-    return analizer
+def initAnalyzer():
+    analyzer = controller.initAnalyzer()
+    return analyzer
 
 def loadData(analizer):
     return controller.loadData(analizer)
 
-analizer = None
 
 """
 Menu principal
@@ -59,24 +59,25 @@ while True:
     printMenu()
     inputs = input('Seleccione una opción para continuar\n')
     if int(inputs[0]) == 1:
-        initAnalizer()
-        loadData(analizer)
+        analyzer = initAnalyzer()
+        loadData(analyzer)
+        print(gr.numVertices(analyzer['connections']))
         print("Cargando información de los archivos ....")
 
     elif int(inputs[0]) == 2:
-        controller.requerimiento1(analizer)
+        controller.requerimiento1(analyzer)
     
     elif int(inputs[0]) == 3:
-        controller.requerimiento2(analizer)
+        controller.requerimiento2(analyzer)
     
     elif int(inputs[0]) == 4:
-        controller.requerimiento3(analizer)
+        controller.requerimiento3(analyzer)
     
     elif int(inputs[0]) == 5:
-        controller.requerimiento4(analizer)
+        controller.requerimiento4(analyzer)
     
     elif int(inputs[0]) == 6:
-        controller.requerimiento5(analizer)
+        controller.requerimiento5(analyzer)
 
     else:
         sys.exit(0)
