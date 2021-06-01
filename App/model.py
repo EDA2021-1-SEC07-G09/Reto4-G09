@@ -25,6 +25,7 @@
  """
 
 
+from DISClib.ADT.indexminpq import contains
 import config as cf
 from DISClib.ADT import list as lt
 from DISClib.ADT import map as mp
@@ -71,7 +72,9 @@ def initAnalyzer():
                                               size=5000,
                                               comparefunction=cmpId)
     return analyzer
+
 # Funciones para agregar informacion al catalogo
+
 def addCountry(analyzer, datacountry):
 
     map = analyzer['countries']
@@ -113,6 +116,9 @@ def addCountryPoint(analyzer, countrypoint):
 
     country = countrypoint.split(',')
     country = country[len(country)-1].lstrip()
+    capital = mp.get(analyzer['countries'], country)
+    capital = me.getValue(capital)['CapitalName']
+    country = country + '-'+ capital
     map = analyzer['countrypoints']
     existcountry = mp.contains(map, country)
     if existcountry:
@@ -172,13 +178,10 @@ def addCountryConnections(analyzer):
     for key in lt.iterator(lstcountry):
         dataentry = mp.get(analyzer['countrypoints'], key)
         lstpoint = me.getValue(dataentry)
-        capital = mp.get(analyzer['countries'], key)
-        capital = me.getValue(capital)['CapitalName']
-        vertex = key + '-'+ capital
-        addStop(analyzer, vertex)
+        addStop(analyzer, key)
         for value in lt.iterator(lstpoint):
-            addConnection(analyzer, vertex, value, 0)
-            addConnection(analyzer, value, vertex, 0)
+            addConnection(analyzer, key, value, 0)
+            addConnection(analyzer, value, key, 0)
 
 def addConnection(analyzer, origin, destination, distance):
 
@@ -237,6 +240,18 @@ def sameCluster(analyzer, origin, destination):
 
     return scc.stronglyConnected(analyzer['components'], origin, destination)
 
+def minimumCostPaths(analyzer, origin):
+
+    analyzer['paths'] = djk.Dijkstra(analyzer['connections'], origin)
+
+    return analyzer
+
+def minimumCostPath(analyzer, destination):
+    
+    path = djk.pathTo(analyzer['paths'], destination)
+
+    return path
+
 def existPath (analyzer, origin, destination):
 
     analyzer['paths'] = dfs.DepthFirstSearch(analyzer['connections'], origin)
@@ -244,14 +259,23 @@ def existPath (analyzer, origin, destination):
 
     return exist
 
-def numEdges (analyzer, vertex, bool):
+def numEdges (analyzer, vertex):
     
-    outdegree = gr.outdegree(analyzer['connections'], vertex, bool)
-    if bool:
-        indegree = gr.indegree(analyzer['connections'], vertex)-(outdegree[0]-outdegree[1])
-    else: 
-        indegree = gr.indegree(analyzer['connections'], vertex)
-    numedges = outdegree[1] + indegree
+    outdegree = gr.outdegree(analyzer['connections'], vertex)
+    indegree = gr.indegree(analyzer['connections'], vertex)
+    country = vertex.split(',')
+    country = country[len(country)-1].lstrip()
+    exist = mp.contains(analyzer['countries'], country)
+    if exist:
+        capital = mp.get(analyzer['countries'], country)
+        capital = me.getValue(capital)['CapitalName']
+        country = country + '-'+ capital
+        contains = mp.contains(analyzer['countrypoints'], country)
+        if contains:
+            outdegree -= 1
+            indegree -= 1
+    
+    numedges = outdegree + indegree
 
     return numedges
 
@@ -259,24 +283,26 @@ def servedCables(analyzer):
 
     lstvert = gr.vertices(analyzer['connections'])
     map = mp.newMap(numelements=2000,
-                                     maptype='PROBING',
-                                     comparefunction=cmpId)
+                    maptype='PROBING',
+                    comparefunction=cmpId)
     maxvert = lt.newList()
     maxdeg = 0
     for vert in lt.iterator(lstvert):
         vertex = vert.split(',')
+        notcapital = mp.contains(analyzer['landingpoints'], vertex[0])
         contains = mp.contains(map, vertex[0])
-        if not contains:
+        if not contains and notcapital:
             mp.put(map, vertex[0], 'exist')
-            degree = numEdges(analyzer, vert, True)
+            degree = numEdges(analyzer, vert)
             exist = mp.contains(analyzer['points'], vertex[0])
             if exist:
+                degree -= 2
                 dataentry = mp.get(analyzer['points'], vertex[0])
                 lstpoint = me.getValue(dataentry)
                 i = 0
                 for key in lt.iterator(lstpoint):
                     if i == 1:
-                        degree += numEdges(analyzer, key, True)
+                        degree += (numEdges(analyzer, key)-2)
                     else:
                         i += 1
             if degree > maxdeg:
