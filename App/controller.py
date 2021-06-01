@@ -137,14 +137,22 @@ def requerimiento2(analyzer):
 
     return ((result, lstcables[1]), (delta_time, delta_memory))
 
-def requrimiento3(analizer):
+def requerimiento3(analyzer, origin, destination):
     delta_time = -1.0
     delta_memory = -1.0
     
     tracemalloc.start()
     start_time = getTime()
     start_memory = getMemory()
-    reprod = 0
+    
+    countries = mp.keySet(analyzer['countrypoints'])
+    for key in lt.iterator(countries):
+        if origin in key:
+            vertexa = key
+        if destination in key:
+            vertexb = key
+    model.minimumCostPaths(analyzer, vertexa)
+    minpath = model.minimumCostPath(analyzer, vertexb)
     
 
     stop_memory = getMemory()
@@ -153,7 +161,8 @@ def requrimiento3(analizer):
 
     delta_time = stop_time - start_time
     delta_memory = deltaMemory(start_memory, stop_memory)
-    return model.requerimiento3(analizer)
+
+    return (minpath, (delta_time, delta_memory))
 
 def requrimiento4(analizer):
     delta_time = -1.0

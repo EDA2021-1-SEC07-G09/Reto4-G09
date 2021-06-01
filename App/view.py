@@ -26,6 +26,8 @@ import controller
 from DISClib.ADT import list as lt
 from DISClib.ADT.graph import gr
 from DISClib.ADT import map as mp
+from DISClib.ADT import stack
+from DISClib.DataStructures import edge as e
 assert cf
 
 
@@ -71,6 +73,7 @@ while True:
         value = mp.valueSet(analyzer['points'])
         x = lt.firstElement(value)
         print(x)
+        print(mp.size(analyzer['countrypoints']))
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
 
     elif int(inputs[0]) == 2:
@@ -91,7 +94,22 @@ while True:
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
     
     elif int(inputs[0]) == 4:
-        controller.requerimiento3(analyzer)
+
+        origin = input('Ingrese el pais de origen: ')
+        destination = input('Ingrese el pais de destino: ')
+        result = controller.requerimiento3(analyzer, origin, destination)
+        if result[0] is not None:
+            pathlen = stack.size(result[0])
+            distance = 0
+            while (not stack.isEmpty(result[0])):
+                edge = stack.pop(result[0])
+                distance += e.weight(edge)
+                print(edge)
+            print('La distancia es de ', distance, ' Km')
+        else:
+            print('No es posible establecer una conexion')
+        
+        print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
     
     elif int(inputs[0]) == 5:
         controller.requerimiento4(analyzer)
