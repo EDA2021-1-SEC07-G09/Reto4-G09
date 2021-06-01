@@ -114,15 +114,19 @@ def requerimiento1(analyzer, origin, destination):
 
     return ((clusters, samecluster), (delta_time, delta_memory))
 
-def requrimiento2(analizer):
+def requerimiento2(analyzer):
     delta_time = -1.0
     delta_memory = -1.0
     
     tracemalloc.start()
     start_time = getTime()
     start_memory = getMemory()
-    reprod = 0
     
+    lstcables = model.servedCables(analyzer)
+    result = lt.newList()
+    for cable in lt.iterator(lstcables[0]):
+        lt.addLast(result, model.selectResult(cable, 'cable'))
+
 
     stop_memory = getMemory()
     stop_time = getTime()
@@ -130,7 +134,8 @@ def requrimiento2(analizer):
 
     delta_time = stop_time - start_time
     delta_memory = deltaMemory(start_memory, stop_memory)
-    return model.requerimiento2(analizer)
+
+    return ((result, lstcables[1]), (delta_time, delta_memory))
 
 def requrimiento3(analizer):
     delta_time = -1.0

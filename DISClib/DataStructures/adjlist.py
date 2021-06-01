@@ -233,7 +233,7 @@ def indegree(graph, vertex):
         error.reraise(exp, 'ajlist:indegree')
 
 
-def outdegree(graph, vertex):
+def outdegree(graph, vertex, bool):
     """
     Retorna el numero de arcos que salen del grafo vertex
 
@@ -250,7 +250,15 @@ def outdegree(graph, vertex):
         if (graph['directed']):
             element = map.get(graph['vertices'], vertex)
             lst = element['value']
-            return (lt.size(lst))
+            if bool:
+                num = 0
+                for edge in lt.iterator(lst):
+                    if e.weight(edge) > 0:
+                        num += 1 
+                return (lt.size(lst), num)
+                
+            else:   
+                return (lt.size(lst))
         return 0
     except Exception as exp:
         error.reraise(exp, 'ajlist:outdegree')

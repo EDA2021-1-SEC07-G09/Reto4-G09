@@ -53,22 +53,22 @@ def initAnalyzer():
     analyzer['countries'] = mp.newMap(numelements=236,
                                      maptype='PROBING',
                                      comparefunction=cmpId)
-    analyzer['landingpoints'] = mp.newMap(numelements=14000,
+    analyzer['landingpoints'] = mp.newMap(numelements=2000,
                                      maptype='PROBING',
                                      comparefunction=cmpId)
-    analyzer['points'] = mp.newMap(numelements=14000,
+    analyzer['points'] = mp.newMap(numelements=2000,
                                      maptype='PROBING',
                                      comparefunction=cmpId)
     analyzer['countrypoints'] = mp.newMap(numelements=236,
                                      maptype='PROBING',
                                      comparefunction=cmpId)
-    analyzer['cables'] = mp.newMap(numelements=14000,
+    analyzer['cables'] = mp.newMap(numelements=2000,
                                      maptype='PROBING',
                                      comparefunction=cmpCables)
 
     analyzer['connections'] = gr.newGraph(datastructure='ADJ_LIST',
                                               directed=True,
-                                              size=14000,
+                                              size=5000,
                                               comparefunction=cmpId)
     return analyzer
 # Funciones para agregar informacion al catalogo
@@ -219,8 +219,11 @@ def selectResult(value, element):
 
     if element == 'country':
         return str("Pais: " + value['CountryName']+ " - Poblacion: "+ value['Population']+ " - Numero de usuarios: "+ value['Internet users'])
-    else:
+    elif element == 'landingpoint':
         return str("Landing point id: "+ value['landing_point_id']+ " - Nombre: "+ value['name']+ " - Latitud: "+ value['latitude']+ " - Longitud: "+ value['longitude'])
+    else:
+        value = value.split(',')
+        return str('Landing point nombre: '+ value[len(value)-2] + value[len(value)-1] + ' - Pais: '+  value[len(value)-1]+ ' - Id: '+ value[0])
 
 # Funciones de consulta
 
@@ -240,6 +243,51 @@ def existPath (analyzer, origin, destination):
     exist = dfs.hasPathTo(analyzer['paths'], destination)
 
     return exist
+
+def numEdges (analyzer, vertex, bool):
+    
+    outdegree = gr.outdegree(analyzer['connections'], vertex, bool)
+    if bool:
+        indegree = gr.indegree(analyzer['connections'], vertex)-(outdegree[0]-outdegree[1])
+    else: 
+        indegree = gr.indegree(analyzer['connections'], vertex)
+    numedges = outdegree[1] + indegree
+
+    return numedges
+
+def servedCables(analyzer):
+
+    lstvert = gr.vertices(analyzer['connections'])
+    map = mp.newMap(numelements=2000,
+                                     maptype='PROBING',
+                                     comparefunction=cmpId)
+    maxvert = lt.newList()
+    maxdeg = 0
+    for vert in lt.iterator(lstvert):
+        vertex = vert.split(',')
+        contains = mp.contains(map, vertex[0])
+        if not contains:
+            mp.put(map, vertex[0], 'exist')
+            degree = numEdges(analyzer, vert, True)
+            exist = mp.contains(analyzer['points'], vertex[0])
+            if exist:
+                dataentry = mp.get(analyzer['points'], vertex[0])
+                lstpoint = me.getValue(dataentry)
+                i = 0
+                for key in lt.iterator(lstpoint):
+                    if i == 1:
+                        degree += numEdges(analyzer, key, True)
+                    else:
+                        i += 1
+            if degree > maxdeg:
+                maxvert = lt.newList()
+                lt.addLast(maxvert, vert)
+                maxdeg = degree
+            elif degree == maxdeg:
+                lt.addLast(maxvert, vert)
+    return (maxvert, maxdeg)
+
+
 
 # Funciones utilizadas para comparar elementos dentro de una lista
 def cmpId(stop, keyvaluestop):

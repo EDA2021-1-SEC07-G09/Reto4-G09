@@ -84,7 +84,11 @@ while True:
             print('Los landing point '+ origin, ' y '+ destination +  ' no estan en el mismo cluster')
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
     elif int(inputs[0]) == 3:
-        controller.requerimiento2(analyzer)
+        result = controller.requerimiento2(analyzer)
+        for value in lt.iterator(result[0][0]):
+            print(value)
+        print('El anterior landing point tiene un total de ', result[0][1], ' interconexiones con cables')
+        print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
     
     elif int(inputs[0]) == 4:
         controller.requerimiento3(analyzer)

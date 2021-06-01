@@ -159,7 +159,7 @@ def degree(graph, vertex):
     return gr.degree(graph, vertex)
 
 
-def outdegree(graph, vertex):
+def outdegree(graph, vertex, bool):
     """
     Retorna el numero de arcos que salen del grafo vertex
 
@@ -172,7 +172,7 @@ def outdegree(graph, vertex):
     Raises:
         Exception
     """
-    return gr.outdegree(graph, vertex)
+    return gr.outdegree(graph, vertex, bool)
 
 
 def indegree(graph, vertex):
