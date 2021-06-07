@@ -112,19 +112,27 @@ while True:
             webbrowser.open('mapa.html')
     elif int(inputs[0]) == 5:
         result = controller.requerimiento4(analyzer)
-        if result[0][0] is not None:
-            distance = 0
-            while (not lt.isEmpty(result[0][0])):
-                edge = lt.removeLast(result[0][0])
-                distance += e.weight(edge)
-                print(edge)
+        distance = 0
+        while (not lt.isEmpty(result[0][0])):
+            edge = lt.removeLast(result[0][0])
+            distance += e.weight(edge)
+            print(edge)
         print('El numero de vertices asociados a la red de expansion minima es de: ', result[0][1][1])
         print('El costo del MST es de ', result[0][1][0], ' Km')
         print('El costo de la rama mas larga es de ', distance, ' Km')
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
     elif int(inputs[0]) == 6:
-        #webbrowser.open('mapa.html')
-        controller.requerimiento5(analyzer)
+        landingpoint = input("Ingresa el landing point: ")
+        result = controller.requerimiento5(analyzer, landingpoint)
+        print('El numero de paises afectados es de: ', lt.size(result[0]))
+        for edge in lt.iterator(result[0]):
+            pais = edge['vertexB'].split(',')
+            if len(pais) > 3:
+                pais = pais[len(pais)-1]
+            else:
+                pais = pais[0]
+            print('Pais: '+ pais + ' Distancia: ', e.weight(edge))
+        print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
 
     else:
         sys.exit(0)

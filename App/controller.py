@@ -27,7 +27,7 @@ import model
 from DISClib.ADT import map as mp
 from DISClib.DataStructures import mapentry as me
 from DISClib.ADT import list as lt
-from DISClib.ADT.graph import gr
+from DISClib.ADT.graph import edges, gr
 import csv
 import time
 import tracemalloc
@@ -208,7 +208,7 @@ def requerimiento4(analyzer):
     delta_memory = deltaMemory(start_memory, stop_memory)
     return ((maxbranch, (MSTcost, numvertexs)), (delta_time, delta_memory))
 
-def requerimiento5(analyzer):
+def requerimiento5(analyzer, landingpoint):
     delta_time = -1.0
     delta_memory = -1.0
     
@@ -216,15 +216,21 @@ def requerimiento5(analyzer):
     start_time = getTime()
     start_memory = getMemory()  
 
-    countries = mp.keySet(analyzer['countrypoints'])
-    x = 0
-    for key in lt.iterator(countries):
-        if key == None:
-            x+= 1
-    
-    print(x)
-    #lstedges = gr.edges(analyzer['connections'])
-    #model.createMap(analyzer, lstedges)
+    landingpoints = mp.keySet(analyzer['landingpoints'])
+    capitals = mp.keySet(analyzer['countrypoints'])
+    capital = False
+    for key in lt.iterator(capitals):
+        if landingpoint in key:
+            vertex = key
+            capital = True
+    if not capital:
+        for key in lt.iterator(landingpoints):
+            dataentry = mp.get(analyzer['landingpoints'], key)
+            entry = me.getValue(dataentry)
+            if landingpoint in entry['data']['name']:
+                key = lt.firstElement(entry['points'])
+                vertex = key
+    edges = model.afectedCountries(analyzer, vertex)
 
     stop_memory = getMemory()
     stop_time = getTime()
@@ -232,7 +238,7 @@ def requerimiento5(analyzer):
 
     delta_time = stop_time - start_time
     delta_memory = deltaMemory(start_memory, stop_memory)
-    return (delta_time, delta_memory)
+    return (edges, (delta_time, delta_memory))
 
 
 def getTime():

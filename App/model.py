@@ -27,24 +27,23 @@
 
 from typing import Coroutine
 
-from folium.features import ColorLine
-from DISClib.ADT.indexminpq import contains
 import config as cf
 from DISClib.ADT import list as lt
 from DISClib.ADT import map as mp
 from DISClib.DataStructures import mapentry as me
 from DISClib.Algorithms.Sorting import shellsort as sa
 assert cf
-from DISClib.ADT.graph import gr, vertices
+from DISClib.ADT.graph import adjacentEdges, gr, vertices
+from DISClib.Algorithms.Sorting import mergesort as mer
 from DISClib.Algorithms.Graphs import scc
 from DISClib.Algorithms.Graphs import dijsktra as djk
 from DISClib.Algorithms.Graphs import prim
 from DISClib.Algorithms.Graphs import dfs
 from DISClib.DataStructures import edge as e
-from DISClib.ADT import queue as q
 from math import sin,cos,sqrt,asin,pi
 import folium
 import random
+import time
 """
 Se define la estructura de un catálogo de videos. El catálogo tendrá dos listas, una para los videos, otra para las categorias de
 los mismos.
@@ -320,6 +319,34 @@ def recreateBranch (mapvertex, entry, vertex):
         vertex = e.either(edge)
         recreateBranch (mapvertex, entry, vertex)
 
+def afectedCountries (analyzer, vertex):
+
+    adjacentedges = gr.adjacentEdges(analyzer['connections'], vertex)
+    map = mp.newMap(numelements=100,maptype='PROBING')
+    i = 1
+    while i <= lt.size(adjacentedges):
+        edge = lt.getElement(adjacentedges, i)
+        pais = edge['vertexB'].split(',')
+        if len(pais) > 3:
+            pais = pais[len(pais)-1]
+        else:
+            pais = pais[0]
+        contains = mp.contains(map, pais)
+        if contains:
+            entry = mp.get(map, pais)
+            entry = me.getValue(entry)
+            if e.weight(edge) < entry[0]:
+                mp.put(map, pais, (e.weight(edge), i))
+                lt.deleteElement(adjacentedges, entry[1])
+            else:
+                lt.deleteElement(adjacentedges, i)
+        else:
+            mp.put(map, pais, (e.weight(edge), i))
+            i += 1
+    orderededges = mergeSortEdges(adjacentedges, lt.size(adjacentedges))[0]
+
+    return orderededges
+
 def numEdges (analyzer, vertex):
     
     outdegree = gr.outdegree(analyzer['connections'], vertex)
@@ -398,4 +425,18 @@ def cmpCables(stop, keyvaluestop):
         return 0
     else:
         return -1
+
+def cmpKm(edge1, edge2):
+    return float(e.weight(edge1)) > float(e.weight(edge2))
+
 # Funciones de ordenamiento
+
+def mergeSortEdges(lstevent, size):
+    sub_list = lt.subList(lstevent, 1, size)
+    sub_list = sub_list.copy()
+    start_time = time.process_time()
+    mergeSortList = mer.sort(sub_list, cmpKm)
+    stop_time = time.process_time()
+    elapsed_time_mseg = (stop_time - start_time)*1000
+
+    return (mergeSortList, elapsed_time_mseg)
