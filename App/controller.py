@@ -168,10 +168,8 @@ def requerimiento3(analyzer, origin, destination):
     countries = mp.keySet(analyzer['countrypoints'])
     for key in lt.iterator(countries):
         if origin == key.split(',')[0]:
-            print(key)
             vertexa = key
         if destination == key.split(',')[0]:
-            print(key)
             vertexb = key
     model.minimumCostPaths(analyzer, vertexa)
     minpath = model.minimumCostPath(analyzer, vertexb)

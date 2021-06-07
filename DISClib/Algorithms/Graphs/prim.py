@@ -53,7 +53,6 @@ def PrimMST(graph):
         vertices = g.vertices(graph)
         for vert in lt.iterator(vertices):
             if not map.get(search['marked'], vert)['value']:
-                print(vert)
                 prim(graph, search, vert)
         return search
     except Exception as exp:
