@@ -199,6 +199,7 @@ def requerimiento4(analyzer):
     MSTcost = model.costMST(analyzer)
     numvertexs= model.numVertexsMST(analyzer)
     maxbranch = model.longuestBranch(analyzer)
+    model.createMap(analyzer, analyzer['MST']['mst'])
     
     stop_memory = getMemory()
     stop_time = getTime()
@@ -231,6 +232,8 @@ def requerimiento5(analyzer, landingpoint):
                 key = lt.firstElement(entry['points'])
                 vertex = key
     edges = model.afectedCountries(analyzer, vertex)
+    model.createMap(analyzer, edges[0])
+    
 
     stop_memory = getMemory()
     stop_time = getTime()
@@ -238,7 +241,7 @@ def requerimiento5(analyzer, landingpoint):
 
     delta_time = stop_time - start_time
     delta_memory = deltaMemory(start_memory, stop_memory)
-    return (edges, (delta_time, delta_memory))
+    return (edges[1], (delta_time, delta_memory))
 
 
 def getTime():

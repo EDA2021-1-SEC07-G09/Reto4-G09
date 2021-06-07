@@ -323,9 +323,10 @@ def afectedCountries (analyzer, vertex):
 
     adjacentedges = gr.adjacentEdges(analyzer['connections'], vertex)
     map = mp.newMap(numelements=100,maptype='PROBING')
+    lstedges = adjacentedges.copy()
     i = 1
-    while i <= lt.size(adjacentedges):
-        edge = lt.getElement(adjacentedges, i)
+    while i <= lt.size(lstedges):
+        edge = lt.getElement(lstedges, i)
         pais = edge['vertexB'].split(',')
         if len(pais) > 3:
             pais = pais[len(pais)-1]
@@ -337,15 +338,15 @@ def afectedCountries (analyzer, vertex):
             entry = me.getValue(entry)
             if e.weight(edge) < entry[0]:
                 mp.put(map, pais, (e.weight(edge), i))
-                lt.deleteElement(adjacentedges, entry[1])
+                lt.deleteElement(lstedges, entry[1])
             else:
-                lt.deleteElement(adjacentedges, i)
+                lt.deleteElement(lstedges, i)
         else:
             mp.put(map, pais, (e.weight(edge), i))
             i += 1
-    orderededges = mergeSortEdges(adjacentedges, lt.size(adjacentedges))[0]
+    orderededges = mergeSortEdges(lstedges, lt.size(lstedges))[0]
 
-    return orderededges
+    return (adjacentedges, orderededges)
 
 def numEdges (analyzer, vertex):
     
@@ -390,7 +391,7 @@ def createMap(analyzer, lstconnections):
     map.add_child(folium.LatLngPopup())
     for edge in lt.iterator(lstconnections):
         origin = e.either(edge).split(',')
-        destination = e.other(edge).split(',')
+        destination = edge['vertexB'].split(',')
         coordinate1 = getCoordinate(analyzer, origin[0])
         coordinate2 = getCoordinate(analyzer, destination[0])
         route = (coordinate1, coordinate2) 
