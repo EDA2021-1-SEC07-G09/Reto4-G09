@@ -90,7 +90,6 @@ while True:
             print(value)
         print('El anterior landing point tiene un total de ', result[0][1], ' interconexiones con cables')
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
-    
     elif int(inputs[0]) == 4:
 
         origin = input('Ingrese el pais de origen: ')
@@ -107,7 +106,7 @@ while True:
             print('No es posible establecer una conexion')
         
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
-        vermap = input('Desea observar el camino grafica en el mapa universal.')
+        vermap = input('Desea observar el camino grafica en el mapa?')
         if vermap == 'si':
             webbrowser.open('mapa.html')
     elif int(inputs[0]) == 5:
@@ -121,6 +120,9 @@ while True:
         print('El costo del MST es de ', result[0][1][0], ' Km')
         print('El costo de la rama mas larga es de ', distance, ' Km')
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
+        vermap = input('Desea observar la red de expansion minima graficada en el mapa?')
+        if vermap == 'si':
+            webbrowser.open('mapa.html')
     elif int(inputs[0]) == 6:
         landingpoint = input("Ingresa el landing point: ")
         result = controller.requerimiento5(analyzer, landingpoint)
@@ -133,6 +135,9 @@ while True:
                 pais = pais[0]
             print('Pais: '+ pais + ' Distancia: ', e.weight(edge))
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
+        vermap = input('Desea observar la conexiones del landingpoint graficadas en el mapa?')
+        if vermap == 'si':
+            webbrowser.open('mapa.html')
 
     else:
         sys.exit(0)
