@@ -270,7 +270,6 @@ def costMST (analyzer):
 def numVertexsMST(analyzer):
 
     edges = analyzer['MST']['mst']
-    print(mp.size(edges))
     map = mp.newMap(numelements=2000,maptype='PROBING')
     for edge in lt.iterator(edges):
         vertexa = e.either(edge)
