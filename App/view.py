@@ -124,7 +124,7 @@ while True:
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
     elif int(inputs[0]) == 6:
         #webbrowser.open('mapa.html')
-        #controller.requerimiento5(analyzer)
+        controller.requerimiento5(analyzer)
 
     else:
         sys.exit(0)
