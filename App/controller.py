@@ -20,10 +20,14 @@
  * along withthis program.  If not, see <http://www.gnu.org/licenses/>.
  """
 
+from DISClib.ADT.indexminpq import contains
+from App.model import MST
 import config as cf
 import model
 from DISClib.ADT import map as mp
+from DISClib.DataStructures import mapentry as me
 from DISClib.ADT import list as lt
+from DISClib.ADT.graph import gr
 import csv
 import time
 import tracemalloc
@@ -96,12 +100,28 @@ def requerimiento1(analyzer, origin, destination):
     start_time = getTime()
     start_memory = getMemory()
 
-    cables = mp.keySet(analyzer['cables'])
-    for key in lt.iterator(cables):
+    landingpoints = mp.keySet(analyzer['landingpoints'])
+    capitals = mp.keySet(analyzer['countrypoints'])
+    capital = False
+    vertexa = None
+    vertexb = None
+    for key in lt.iterator(capitals):
         if origin in key:
             vertexa = key
         if destination in key:
             vertexb = key
+    if vertexa is not None and vertexb is not None:
+        capital = True
+    if not capital:
+        for key in lt.iterator(landingpoints):
+            dataentry = mp.get(analyzer['landingpoints'], key)
+            entry = me.getValue(dataentry)
+            if not vertexa and origin in entry['data']['name']:
+                key = lt.firstElement(entry['points'])
+                vertexa = key
+            if not vertexb and destination in entry['data']['name']:
+                key = lt.firstElement(entry['points'])
+                vertexb = key
     clusters = model.connectedComponents(analyzer)
     samecluster = model.sameCluster(analyzer, vertexa, vertexb)
 
@@ -147,12 +167,15 @@ def requerimiento3(analyzer, origin, destination):
     
     countries = mp.keySet(analyzer['countrypoints'])
     for key in lt.iterator(countries):
-        if origin in key:
+        if origin == key.split(',')[0]:
+            print(key)
             vertexa = key
-        if destination in key:
+        if destination == key.split(',')[0]:
+            print(key)
             vertexb = key
     model.minimumCostPaths(analyzer, vertexa)
     minpath = model.minimumCostPath(analyzer, vertexb)
+    model.createMap(analyzer, minpath)
     
 
     stop_memory = getMemory()
@@ -164,15 +187,44 @@ def requerimiento3(analyzer, origin, destination):
 
     return (minpath, (delta_time, delta_memory))
 
-def requrimiento4(analizer):
+def requerimiento4(analyzer):
     delta_time = -1.0
     delta_memory = -1.0
     
     tracemalloc.start()
     start_time = getTime()
     start_memory = getMemory()
-    reprod = 0
+ 
+    model.MST(analyzer)
+    MSTcost = model.costMST(analyzer)
+    numvertexs= model.numVertexsMST(analyzer)
+    maxbranch = model.longuestBranch(analyzer)
     
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+    return ((maxbranch, (MSTcost, numvertexs)), (delta_time, delta_memory))
+
+def requerimiento5(analyzer):
+    delta_time = -1.0
+    delta_memory = -1.0
+    
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()  
+
+    countries = mp.keySet(analyzer['countrypoints'])
+    x = 0
+    for key in lt.iterator(countries):
+        if key == None:
+            x+= 1
+    
+    print(x)
+    #lstedges = gr.edges(analyzer['connections'])
+    #model.createMap(analyzer, lstedges)
 
     stop_memory = getMemory()
     stop_time = getTime()
@@ -180,25 +232,7 @@ def requrimiento4(analizer):
 
     delta_time = stop_time - start_time
     delta_memory = deltaMemory(start_memory, stop_memory)
-    return model.requerimiento4(analizer)
-
-def requrimiento5(analizer):
-    delta_time = -1.0
-    delta_memory = -1.0
-    
-    tracemalloc.start()
-    start_time = getTime()
-    start_memory = getMemory()
-    reprod = 0
-    
-
-    stop_memory = getMemory()
-    stop_time = getTime()
-    tracemalloc.stop()
-
-    delta_time = stop_time - start_time
-    delta_memory = deltaMemory(start_memory, stop_memory)
-    return model.requerimiento5(analizer)
+    return (delta_time, delta_memory)
 
 
 def getTime():
