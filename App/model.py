@@ -25,6 +25,9 @@
  """
 
 
+from typing import Coroutine
+
+from folium.features import ColorLine
 from DISClib.ADT.indexminpq import contains
 import config as cf
 from DISClib.ADT import list as lt
@@ -32,11 +35,16 @@ from DISClib.ADT import map as mp
 from DISClib.DataStructures import mapentry as me
 from DISClib.Algorithms.Sorting import shellsort as sa
 assert cf
-from DISClib.ADT.graph import gr
+from DISClib.ADT.graph import gr, vertices
 from DISClib.Algorithms.Graphs import scc
 from DISClib.Algorithms.Graphs import dijsktra as djk
+from DISClib.Algorithms.Graphs import prim
 from DISClib.Algorithms.Graphs import dfs
+from DISClib.DataStructures import edge as e
+from DISClib.ADT import queue as q
 from math import sin,cos,sqrt,asin,pi
+import folium
+import random
 """
 Se define la estructura de un catálogo de videos. El catálogo tendrá dos listas, una para los videos, otra para las categorias de
 los mismos.
@@ -48,29 +56,21 @@ def initAnalyzer():
                     'connections': None,
                     'countries': None,
                     'landingpoints': None,
-                    'points' : None
+                    'countrypoints' : None
                     }
 
     analyzer['countries'] = mp.newMap(numelements=236,
-                                     maptype='PROBING',
-                                     comparefunction=cmpId)
+                                     maptype='PROBING')
     analyzer['landingpoints'] = mp.newMap(numelements=2000,
-                                     maptype='PROBING',
-                                     comparefunction=cmpId)
-    analyzer['points'] = mp.newMap(numelements=2000,
-                                     maptype='PROBING',
-                                     comparefunction=cmpId)
+                                     maptype='PROBING')
+
     analyzer['countrypoints'] = mp.newMap(numelements=236,
-                                     maptype='PROBING',
-                                     comparefunction=cmpId)
-    analyzer['cables'] = mp.newMap(numelements=2000,
-                                     maptype='PROBING',
-                                     comparefunction=cmpCables)
+                                     maptype='PROBING')
 
     analyzer['connections'] = gr.newGraph(datastructure='ADJ_LIST',
                                               directed=True,
                                               size=5000,
-                                              comparefunction=cmpId)
+                                              comparefunction=cmpVertex)
     return analyzer
 
 # Funciones para agregar informacion al catalogo
@@ -89,43 +89,34 @@ def addLandingPoint(analyzer, datalandingpoint):
     landingpoint = datalandingpoint['landing_point_id']
     existlandingpoint = mp.contains(map, landingpoint)
     if not existlandingpoint:
-        mp.put(map, landingpoint, datalandingpoint)
+        entry = {'data': datalandingpoint,
+                    'points' : lt.newList()}
+        mp.put(map, landingpoint, entry)
 
 def addCablePoint (analyzer, landingpoint, cablepoint):
 
-    map = analyzer['points']
-    existlandingpoint = mp.contains(map, landingpoint)
-    if existlandingpoint:
-        dataentry = mp.get(map, landingpoint)
-        entry = me.getValue(dataentry)
-    else:
-        entry = lt.newList(datastructure = 'ARRAY_LIST', cmpfunction = cmp)
-        mp.put(map, landingpoint, entry)
+    map = analyzer['landingpoints']
+    dataentry = mp.get(map, landingpoint)
+    entry = me.getValue(dataentry)['points']
     contains = lt.isPresent(entry, cablepoint)
     if contains == 0:
         lt.addLast(entry, cablepoint)
 
-def addCable (analyzer, cable):
-
-    map = analyzer['cables']
-    existcable = mp.contains(map, cable)
-    if not existcable:
-        mp.put(map, cable, 'exist')
-
 def addCountryPoint(analyzer, countrypoint):
 
     country = countrypoint.split(',')
-    country = country[len(country)-1].lstrip()
+    country = country[len(country)-1]
+    contains = mp.contains(analyzer['countries'], country)
     capital = mp.get(analyzer['countries'], country)
     capital = me.getValue(capital)['CapitalName']
-    country = country + '-'+ capital
+    country = country + ','+ capital
     map = analyzer['countrypoints']
     existcountry = mp.contains(map, country)
     if existcountry:
         dataentry = mp.get(map, country)
         entry = me.getValue(dataentry)
     else:
-        entry = lt.newList(datastructure = 'ARRAY_LIST', cmpfunction = cmp)
+        entry = lt.newList(datastructure = 'ARRAY_LIST', cmpfunction= cmpPoint)
         mp.put(map, country, entry)
     contains = lt.isPresent(entry, countrypoint)
     if contains == 0:
@@ -135,7 +126,9 @@ def addPointConnection(analyzer, connection):
 
     origin = formatVertex(analyzer, connection,'origin')
     destination = formatVertex(analyzer, connection,'destination')
-    distance = getDistance(analyzer, connection['origin'], connection['destination'])
+    coordinate1 = getCoordinate(analyzer, connection['origin'])
+    coordinate2 = getCoordinate(analyzer, connection['destination'])
+    distance = getDistance(coordinate1, coordinate2)
     addStop(analyzer, origin)
     addStop(analyzer, destination)
     addConnection(analyzer, origin, destination, distance)
@@ -143,24 +136,15 @@ def addPointConnection(analyzer, connection):
     addCablePoint(analyzer, connection['destination'], destination)
     addCountryPoint(analyzer, origin)
     addCountryPoint(analyzer, destination)
-    addCable(analyzer, origin)
-
-    return analyzer
-
-
-def addStop(analyzer, stopid):
-
-    if not gr.containsVertex(analyzer['connections'], stopid):
-        gr.insertVertex(analyzer['connections'], stopid)
 
     return analyzer
 
 def addLandingPointConnections(analyzer):
 
-    lstpoints = mp.keySet(analyzer['points'])
+    lstpoints = mp.keySet(analyzer['landingpoints'])
     for key in lt.iterator(lstpoints):
-        dataentry = mp.get(analyzer['points'], key)
-        lstcables = me.getValue(dataentry)
+        dataentry = mp.get(analyzer['landingpoints'], key)
+        lstcables = me.getValue(dataentry)['points']
         i = 1
         while i < lt.size(lstcables):
             origin = lt.getElement(lstcables, i)
@@ -179,9 +163,12 @@ def addCountryConnections(analyzer):
         dataentry = mp.get(analyzer['countrypoints'], key)
         lstpoint = me.getValue(dataentry)
         addStop(analyzer, key)
+        coordinate1 = getCoordinate(analyzer, key.split(',')[0])
         for value in lt.iterator(lstpoint):
-            addConnection(analyzer, key, value, 0)
-            addConnection(analyzer, value, key, 0)
+            coordinate2 = getCoordinate(analyzer, value.split(',')[0])
+            distance = getDistance(coordinate1, coordinate2)
+            addConnection(analyzer, key, value, distance)
+            addConnection(analyzer, value, key, distance)
 
 def addConnection(analyzer, origin, destination, distance):
 
@@ -190,21 +177,15 @@ def addConnection(analyzer, origin, destination, distance):
         gr.addEdge(analyzer['connections'], origin, destination, distance)
     return analyzer
 
+def addStop(analyzer, stopid):
+
+    if not gr.containsVertex(analyzer['connections'], stopid):
+        gr.insertVertex(analyzer['connections'], stopid)
+
+    return analyzer
+
 # Funciones para creacion de datos
 
-def getDistance (analyzer, origin, destination):
-
-    dataentry1 = mp.get(analyzer['landingpoints'], origin)
-    entry1 = me.getValue(dataentry1)
-    dataentry2 = mp.get(analyzer['landingpoints'], destination)
-    entry2 = me.getValue(dataentry2)
-    coordinate1 = (float(entry1['latitude']), float(entry1['longitude']))
-    coordinate2 = (float(entry2['latitude']), float(entry2['longitude']))
-    distance = 2*6371000*asin(sqrt(sin((pi/180)*(coordinate2[0]-coordinate1[0])/2)**2 + cos((pi/180)*coordinate1[0])*cos((pi/180)*coordinate2[0])*sin((pi/180)*(coordinate2[1]-coordinate1[1])/2)**2))
-    distance = float("%.2f" % distance)
-
-    return distance
-    
 def formatVertex (analyzer, connection, element):
 
     name = None
@@ -213,10 +194,33 @@ def formatVertex (analyzer, connection, element):
     else:
         name = connection['destination']
     dataentry = mp.get(analyzer['landingpoints'], name)
-    entry = me.getValue(dataentry)['name']
+    entry = me.getValue(dataentry)['data']['name']
+    entry = entry.split(',')
+    entry = entry[0]+','+entry[len(entry)-1].lstrip()
     name = str(name + ','+ connection['cable_name']+ ','+ entry)
 
     return name
+
+def getCoordinate (analyzer, vertex):
+
+    contains = mp.contains(analyzer['countries'], vertex)
+    if contains:
+        dataentry = mp.get(analyzer['countries'], vertex)
+        entry = me.getValue(dataentry)
+        coordinate = (float(entry['CapitalLatitude']), float(entry['CapitalLongitude']))
+    else:
+        dataentry = mp.get(analyzer['landingpoints'], vertex)
+        entry = me.getValue(dataentry)['data']
+        coordinate = (float(entry['latitude']), float(entry['longitude']))
+
+    return (coordinate)
+
+def getDistance(coordinate1, coordinate2):
+
+    distance = 2*6371000*asin(sqrt(sin((pi/180)*(coordinate2[0]-coordinate1[0])/2)**2 + cos((pi/180)*coordinate1[0])*cos((pi/180)*coordinate2[0])*sin((pi/180)*(coordinate2[1]-coordinate1[1])/2)**2))
+    distance = float("%.2f" % distance)
+
+    return distance
 
 def selectResult(value, element):
 
@@ -252,29 +256,74 @@ def minimumCostPath(analyzer, destination):
 
     return path
 
-def existPath (analyzer, origin, destination):
+def MST (analyzer):
 
-    analyzer['paths'] = dfs.DepthFirstSearch(analyzer['connections'], origin)
-    exist = dfs.hasPathTo(analyzer['paths'], destination)
+    analyzer['MST'] = prim.PrimMST(analyzer['connections'])
 
-    return exist
+    return analyzer
+
+def costMST (analyzer):
+
+    cost = prim.weightMST(analyzer['connections'], analyzer['MST'])
+
+    return cost
+
+def numVertexsMST(analyzer):
+
+    edges = analyzer['MST']['mst']
+    print(mp.size(edges))
+    map = mp.newMap(numelements=2000,maptype='PROBING')
+    for edge in lt.iterator(edges):
+        vertexa = e.either(edge)
+        vertexb = e.other(edge, vertexa)
+        contains = mp.contains(map, vertexa)
+        if not contains:
+            mp.put(map, vertexb, 'Exist')
+        contains = mp.contains(map, vertexb)
+        if not contains:
+            mp.put(map, vertexb, 'Exist')
+
+    return lt.size(map)
+
+def longuestBranch(analyzer):
+
+    mapvertex = analyzer['MST']['edgeTo']
+    vertexs = mp.keySet(mapvertex)
+    map = mp.newMap(numelements=2000,maptype='PROBING')
+    maxbranch = None
+    maxvertexs = 0
+    for vertex in lt.iterator(vertexs):
+        edge = mp.get(mapvertex, vertex)
+        edge = me.getValue(edge)
+        entry = lt.newList('ARRAY_LIST')
+        lt.addLast(entry, edge)
+        vertex = e.either(edge)
+        recreateBranch (mapvertex, entry, vertex)
+        mp.put(map, vertex, entry)
+    vertexs = mp.keySet(map)
+    for vertex in lt.iterator(vertexs):
+        entry = mp.get(map, vertex)
+        value = me.getValue(entry)
+        if lt.size(value) > maxvertexs:
+            maxvertexs = lt.size(value)
+            maxbranch = value
+
+    return maxbranch
+
+def recreateBranch (mapvertex, entry, vertex):
+
+    exist = mp.contains(mapvertex, vertex)
+    if exist:
+        edge = mp.get(mapvertex, vertex)
+        edge = me.getValue(edge)
+        lt.addLast(entry, edge)
+        vertex = e.either(edge)
+        recreateBranch (mapvertex, entry, vertex)
 
 def numEdges (analyzer, vertex):
     
     outdegree = gr.outdegree(analyzer['connections'], vertex)
     indegree = gr.indegree(analyzer['connections'], vertex)
-    country = vertex.split(',')
-    country = country[len(country)-1].lstrip()
-    exist = mp.contains(analyzer['countries'], country)
-    if exist:
-        capital = mp.get(analyzer['countries'], country)
-        capital = me.getValue(capital)['CapitalName']
-        country = country + '-'+ capital
-        contains = mp.contains(analyzer['countrypoints'], country)
-        if contains:
-            outdegree -= 1
-            indegree -= 1
-    
     numedges = outdegree + indegree
 
     return numedges
@@ -282,56 +331,63 @@ def numEdges (analyzer, vertex):
 def servedCables(analyzer):
 
     lstvert = gr.vertices(analyzer['connections'])
-    map = mp.newMap(numelements=2000,
-                    maptype='PROBING',
-                    comparefunction=cmpId)
+    map = mp.newMap(numelements=2000,maptype='PROBING')
     maxvert = lt.newList()
     maxdeg = 0
     for vert in lt.iterator(lstvert):
         vertex = vert.split(',')
-        notcapital = mp.contains(analyzer['landingpoints'], vertex[0])
         contains = mp.contains(map, vertex[0])
-        if not contains and notcapital:
+        if not contains:
             mp.put(map, vertex[0], 'exist')
             degree = numEdges(analyzer, vert)
-            exist = mp.contains(analyzer['points'], vertex[0])
-            if exist:
-                degree -= 2
-                dataentry = mp.get(analyzer['points'], vertex[0])
-                lstpoint = me.getValue(dataentry)
-                i = 0
-                for key in lt.iterator(lstpoint):
-                    if i == 1:
-                        degree += (numEdges(analyzer, key)-2)
-                    else:
-                        i += 1
-            if degree > maxdeg:
-                maxvert = lt.newList()
-                lt.addLast(maxvert, vert)
-                maxdeg = degree
-            elif degree == maxdeg:
-                lt.addLast(maxvert, vert)
+            landingpoint = mp.contains(analyzer['landingpoints'], vertex[0])
+            if landingpoint:
+                dataentry = mp.get(analyzer['landingpoints'], vertex[0])
+                lstpoint = me.getValue(dataentry)['points']
+                if lt.size(lstpoint) >= 2:
+                    degree -= 2
+                    for key in lt.iterator(lstpoint):
+                        if key != vert:
+                            degree += (numEdges(analyzer, key)-2)
+        if degree > maxdeg:
+            maxvert = lt.newList()
+            lt.addLast(maxvert, vert)
+            maxdeg = degree
+        elif degree == maxdeg:
+            lt.addLast(maxvert, vert)
     return (maxvert, maxdeg)
+
+def createMap(analyzer, lstconnections):
+
+    map = folium.Map(location=[12.240859, -18.118127], tiles='CartoDB Positron', zoom_start=3, orldCopyJump=True)
+    map.add_child(folium.LatLngPopup())
+    for edge in lt.iterator(lstconnections):
+        origin = e.either(edge).split(',')
+        destination = e.other(edge).split(',')
+        coordinate1 = getCoordinate(analyzer, origin[0])
+        coordinate2 = getCoordinate(analyzer, destination[0])
+        route = (coordinate1, coordinate2) 
+        folium.PolyLine(route,  color="#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])).add_to(map)
+    map.save('mapa.html')
 
 
 
 # Funciones utilizadas para comparar elementos dentro de una lista
-def cmpId(stop, keyvaluestop):
 
-    stopcode = keyvaluestop['key']
-    if (stop == stopcode):
+def cmpVertex(vertexa, keyvalue):
+
+    vertexb = keyvalue['key']
+    if (vertexa == vertexb):
         return 0
-    elif (stop > stopcode):
-        return 1
     else:
         return -1
 
-def cmp(value1, value2):
+def cmpPoint(value1, value2):
 
-    if (value1 == value2):
+    value1 = value1.split(',')
+    value2 = value2.split(',')
+    if (value1[0] == value2[0]):
         return 0
-    elif (value1 > value2):
-        return 1
     else:
         return -1
 

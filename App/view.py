@@ -23,6 +23,7 @@
 import config as cf
 import sys
 import controller
+import webbrowser
 from DISClib.ADT import list as lt
 from DISClib.ADT.graph import gr
 from DISClib.ADT import map as mp
@@ -70,9 +71,6 @@ while True:
         "\nEl total de países cargados es de: ", mp.size(analyzer['countries']),
         "\n\n ++++++ 1° Landing point cargado ++++++"+ "\n"+ result[0][1],
         "\n\n ++++++ Ultimo Pais cargado ++++++"+ "\n"+ result[0][0])
-        value = mp.valueSet(analyzer['points'])
-        x = lt.firstElement(value)
-        print(x)
         print(mp.size(analyzer['countrypoints']))
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
 
@@ -99,7 +97,6 @@ while True:
         destination = input('Ingrese el pais de destino: ')
         result = controller.requerimiento3(analyzer, origin, destination)
         if result[0] is not None:
-            pathlen = stack.size(result[0])
             distance = 0
             while (not stack.isEmpty(result[0])):
                 edge = stack.pop(result[0])
@@ -110,12 +107,24 @@ while True:
             print('No es posible establecer una conexion')
         
         print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
-    
+        vermap = input('Desea observar el camino grafica en el mapa universal.')
+        if vermap == 'si':
+            webbrowser.open('mapa.html')
     elif int(inputs[0]) == 5:
-        controller.requerimiento4(analyzer)
-    
+        result = controller.requerimiento4(analyzer)
+        if result[0][0] is not None:
+            distance = 0
+            while (not lt.isEmpty(result[0][0])):
+                edge = lt.removeLast(result[0][0])
+                distance += e.weight(edge)
+                print(edge)
+        print('El numero de vertices asociados a la red de expansion minima es de: ', result[0][1][1])
+        print('El costo del MST es de ', result[0][1][0], ' Km')
+        print('El costo de la rama mas larga es de ', distance, ' Km')
+        print("\nTiempo [ms]: ", f"{result[1][0]:.3f}", "  ||  ",  "Memoria [kB]: ", f"{result[1][1]:.3f}")
     elif int(inputs[0]) == 6:
-        controller.requerimiento5(analyzer)
+        #webbrowser.open('mapa.html')
+        #controller.requerimiento5(analyzer)
 
     else:
         sys.exit(0)
